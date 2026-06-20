@@ -12,18 +12,27 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { customer_id, agent_number } = req.body;
+  const { customer_id, agent_id } = req.body;
 
-  if (!customer_id || !agent_number) {
-    return res.status(400).json({ success: false, error: 'Missing customer_id or agent_number' });
+  if (!customer_id || !agent_id) {
+    return res.status(400).json({ success: false, error: 'Missing customer_id or agent_id' });
+  }
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+
+  if (!supabaseUrl || !supabaseKey || !process.env.SMARTFLO_API_TOKEN) {
+    console.error('Missing env vars:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseKey,
+      hasSmartfloToken: !!process.env.SMARTFLO_API_TOKEN,
+    });
+    return res.status(500).json({ success: false, error: 'Server misconfigured' });
   }
 
   try {
-    // Step 1: Get customer phone number from Supabase using service role key
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-
-    const supabaseResponse = await fetch(
+    // Step 1: Get customer phone number from Supabase
+    const custResponse = await fetch(
       `${supabaseUrl}/rest/v1/customers?id=eq.${customer_id}&select=phone`,
       {
         headers: {
@@ -32,23 +41,42 @@ export default async function handler(req, res) {
         },
       }
     );
+    const customers = await custResponse.json();
+    console.log('Supabase customer lookup:', JSON.stringify(customers));
 
-    const customers = await supabaseResponse.json();
-
-    if (!customers || customers.length === 0) {
-      return res.status(404).json({ success: false, error: 'Customer not found' });
+    if (!customers || customers.length === 0 || !customers[0].phone) {
+      return res.status(404).json({ success: false, error: 'Customer not found or no phone' });
     }
 
-    const customerPhone = customers[0].phone;
+    // Step 2: Get agent phone number from Supabase
+    const agentResponse = await fetch(
+      `${supabaseUrl}/rest/v1/agents?id=eq.${agent_id}&select=phone`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+      }
+    );
+    const agents = await agentResponse.json();
+    console.log('Supabase agent lookup:', JSON.stringify(agents));
 
-    if (!customerPhone) {
-      return res.status(400).json({ success: false, error: 'Customer has no phone number' });
+    if (!agents || agents.length === 0 || !agents[0].phone) {
+      return res.status(404).json({ success: false, error: 'Agent not found or no phone' });
     }
 
-    // Step 2: Call Smartflo click-to-call API
-    // Format: try 10-digit first. If calls fail, switch to 91-prefix below.
-    const formattedAgentNumber = agent_number.replace(/^91/, '');
-    const formattedCustomerPhone = customerPhone.replace(/^91/, '');
+    const customerPhone = customers[0].phone.toString().replace(/^91/, '');
+    const agentPhone = agents[0].phone.toString().replace(/^91/, '');
+
+    // Step 3: Call Smartflo click-to-call
+    const smartfloPayload = {
+      agent_number: agentPhone,
+      destination_number: customerPhone,
+      caller_id: agentPhone,
+      async: 1,
+    };
+
+    console.log('Smartflo request payload:', JSON.stringify(smartfloPayload));
 
     const smartfloResponse = await fetch(
       'https://api-smartflo.tatateleservices.com/v1/click_to_call',
@@ -59,28 +87,14 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          agent_number: formattedAgentNumber,
-          destination_number: formattedCustomerPhone,
-          caller_id: formattedAgentNumber,
-          async: 1,
-        }),
+        body: JSON.stringify(smartfloPayload),
       }
     );
 
     const smartfloData = await smartfloResponse.json();
-
-    // Log everything so you can debug in Vercel logs
-    console.log('Smartflo request:', {
-      agent_number: formattedAgentNumber,
-      destination_number: formattedCustomerPhone,
-      caller_id: formattedAgentNumber,
-      async: 1,
-    });
     console.log('Smartflo response status:', smartfloResponse.status);
     console.log('Smartflo response body:', JSON.stringify(smartfloData));
 
-    // Return exactly what Smartflo said, so the frontend can show the real status
     return res.status(smartfloResponse.status).json(smartfloData);
 
   } catch (error) {
