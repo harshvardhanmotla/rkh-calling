@@ -70,7 +70,7 @@ const agentPhone = agents[0].phone.toString().replace(/^(\+?91)?/, '91');
 
     // Step 3: Call Smartflo click-to-call
     const smartfloPayload = {
-      agent_number: agentPhone,
+      agent_number: '1001',
       destination_number: customerPhone,
       caller_id: agentPhone,
       async: 1,
