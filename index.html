@@ -1,104 +1,646 @@
-export default async function handler(req, res) {
-  // CORS headers for the frontend
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Roopkala Calling</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#623a88">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f8e7c9;
+  color: #333;
+  min-height: 100vh;
+}
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+/* LOGIN */
+.login-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+.login-logo {
+  font-size: 28px;
+  font-weight: 700;
+  color: #623a88;
+  margin-bottom: 4px;
+}
+.login-sub {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 30px;
+}
+.pin-input {
+  width: 200px;
+  padding: 14px;
+  text-align: center;
+  font-size: 24px;
+  letter-spacing: 12px;
+  border: 2px solid #d0c4b8;
+  border-radius: 10px;
+  background: #fff;
+  margin-bottom: 16px;
+  outline: none;
+}
+.pin-input:focus { border-color: #623a88; }
+.login-btn {
+  width: 200px;
+  padding: 14px;
+  background: #623a88;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.login-error {
+  color: #c62828;
+  font-size: 13px;
+  margin-top: 10px;
+  min-height: 20px;
+}
+
+/* APP */
+.app-screen { display: none; }
+.app-header {
+  background: #623a88;
+  color: #fff;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.app-title { font-size: 18px; font-weight: 700; }
+.agent-name { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+.logout-btn {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* FILTERS */
+.filters {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  background: #fff;
+  border-bottom: 1px solid #e0d6cc;
+  -webkit-overflow-scrolling: touch;
+}
+.filter-btn {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 1px solid #d0c4b8;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.filter-btn.active {
+  background: #623a88;
+  color: #fff;
+  border-color: #623a88;
+}
+.count-badge {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+/* CUSTOMER LIST */
+.customer-list { padding: 16px; }
+.customer-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.customer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.customer-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+.customer-name.unnamed {
+  color: #999;
+  font-style: italic;
+}
+.customer-id {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+.disposition-badge {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.disposition-New { background: #e3f2fd; color: #1565c0; }
+.disposition-Interested { background: #e8f5e9; color: #2e7d32; }
+.disposition-NotInterested { background: #fce4ec; color: #c62828; }
+.disposition-NotAnswered { background: #fff3e0; color: #e65100; }
+.disposition-Callback { background: #f3e5f5; color: #7b1fa2; }
+.disposition-Busy { background: #fff8e1; color: #f57f17; }
+.disposition-Invalid { background: #efebe9; color: #795548; }
+
+/* CALL BUTTON */
+.call-btn {
+  width: 100%;
+  padding: 14px;
+  background: #623a88;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.call-btn.calling {
+  background: #e65100;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.call-btn:disabled { cursor: not-allowed; }
+
+/* EDIT */
+.edit-toggle {
+  background: none;
+  border: none;
+  color: #623a88;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+}
+.edit-row {
+  display: none;
+  gap: 8px;
+  margin-top: 8px;
+}
+.edit-row.show { display: flex; }
+.edit-input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #d0c4b8;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.edit-save-btn {
+  padding: 10px 20px;
+  background: #623a88;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* DISPOSITION */
+.disposition-row {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.disposition-row.show { display: grid; }
+.disp-btn {
+  padding: 12px 8px;
+  background: #fff;
+  border: 1px solid #d0c4b8;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #333;
+}
+.disp-btn:active { background: #f0e8f5; }
+
+/* NOTES */
+.notes-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d0c4b8;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 60px;
+  margin-top: 8px;
+}
+
+/* TOAST */
+.status-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  z-index: 999;
+  display: none;
+}
+.status-toast.show { display: block; }
+.status-toast.error { background: #c62828; }
+.status-toast.success { background: #2e7d32; }
+
+/* LOAD MORE */
+.load-more-btn {
+  width: 100%;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #d0c4b8;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #623a88;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-logo">ROOPKALA</div>
+  <div class="login-sub">Telecalling System</div>
+  <input type="password" class="pin-input" id="pinInput" placeholder="PIN" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+  <button class="login-btn" onclick="handleLogin()">Login</button>
+  <div class="login-error" id="loginError"></div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app-screen" id="appScreen">
+  <div class="app-header">
+    <div>
+      <div class="app-title">Roopkala Calling</div>
+      <div class="agent-name" id="agentNameDisplay"></div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+  </div>
+
+  <div class="filters" id="filtersBar">
+    <button class="filter-btn active" data-filter="New" onclick="setFilter('New', this)">New <span class="count-badge" id="count-New">0</span></button>
+    <button class="filter-btn" data-filter="NotAnswered" onclick="setFilter('NotAnswered', this)">Not Answered <span class="count-badge" id="count-NotAnswered">0</span></button>
+    <button class="filter-btn" data-filter="Callback" onclick="setFilter('Callback', this)">Callback <span class="count-badge" id="count-Callback">0</span></button>
+    <button class="filter-btn" data-filter="Interested" onclick="setFilter('Interested', this)">Interested <span class="count-badge" id="count-Interested">0</span></button>
+    <button class="filter-btn" data-filter="NotInterested" onclick="setFilter('NotInterested', this)">Not Interested <span class="count-badge" id="count-NotInterested">0</span></button>
+    <button class="filter-btn" data-filter="All" onclick="setFilter('All', this)">All <span class="count-badge" id="count-All">0</span></button>
+  </div>
+
+  <div class="customer-list" id="customerList">
+    <div class="loading">Loading customers...</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="status-toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ============ CONFIGURATION ============
+const SUPABASE_URL = 'https://hyxeupesicgdsucrqmjd.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eGV1cGVzaWNnZHN1Y3JxbWpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NjYxMTUsImV4cCI6MjA5NzM0MjExNX0.AxX6WCG6vc41nNMyrf1O_gK4uQ4Z07Kzvg44m0Jyy4E';
+const N8N_WEBHOOK_URL = '/api/call';
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============ STATE ============
+let currentAgent = null;
+let currentFilter = 'New';
+let customers = [];
+let page = 0;
+const PAGE_SIZE = 30;
+
+// ============ LOGIN ============
+async function handleLogin() {
+  const pin = document.getElementById('pinInput').value.trim();
+  const errorEl = document.getElementById('loginError');
+
+  if (!pin || pin.length !== 4) {
+    errorEl.textContent = 'Enter your 4-digit PIN';
+    return;
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  const { data, error } = await db
+    .from('agents')
+    .select('*')
+    .eq('pin', pin)
+    .eq('is_active', true);
+
+  if (error || !data || data.length === 0) {
+    errorEl.textContent = 'Invalid PIN. Try again.';
+    return;
   }
 
-  const { customer_id, agent_id } = req.body;
+  currentAgent = data[0];
+  document.getElementById('agentNameDisplay').textContent = currentAgent.name;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'block';
 
-  if (!customer_id || !agent_id) {
-    return res.status(400).json({ success: false, error: 'Missing customer_id or agent_id' });
+  loadCounts();
+  loadCustomers();
+}
+
+function handleLogout() {
+  currentAgent = null;
+  customers = [];
+  page = 0;
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('pinInput').value = '';
+  document.getElementById('loginError').textContent = '';
+}
+
+// Enter key on PIN input
+document.getElementById('pinInput').addEventListener('keyup', function(e) {
+  if (e.key === 'Enter') handleLogin();
+});
+
+// ============ LOAD CUSTOMERS ============
+async function loadCounts() {
+  const filters = ['New', 'NotAnswered', 'Callback', 'Interested', 'NotInterested'];
+
+  for (const f of filters) {
+    const { count } = await db
+      .from('customers')
+      .select('*', { count: 'exact', head: true })
+      .eq('disposition', f);
+
+    const el = document.getElementById('count-' + f);
+    if (el) el.textContent = count || 0;
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+  const { count: total } = await db
+    .from('customers')
+    .select('*', { count: 'exact', head: true });
 
-  if (!supabaseUrl || !supabaseKey || !process.env.SMARTFLO_API_TOKEN) {
-    console.error('Missing env vars:', {
-      hasSupabaseUrl: !!supabaseUrl,
-      hasSupabaseKey: !!supabaseKey,
-      hasSmartfloToken: !!process.env.SMARTFLO_API_TOKEN,
-    });
-    return res.status(500).json({ success: false, error: 'Server misconfigured' });
+  const el = document.getElementById('count-All');
+  if (el) el.textContent = total || 0;
+}
+
+async function loadCustomers(append = false) {
+  if (!append) {
+    page = 0;
+    customers = [];
   }
+
+  const from = page * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  let query = db
+    .from('customers')
+    .select('id, name, city, customer_type, disposition, assigned_agent, last_called_at, notes')
+    .range(from, to)
+    .order('id', { ascending: true });
+
+  if (currentFilter !== 'All') {
+    query = query.eq('disposition', currentFilter);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    showToast('Error loading customers', 'error');
+    return;
+  }
+
+  if (append) {
+    customers = [...customers, ...data];
+  } else {
+    customers = data || [];
+  }
+
+  renderCustomers(data && data.length === PAGE_SIZE);
+}
+
+// ============ RENDER ============
+function renderCustomers(hasMore) {
+  const listEl = document.getElementById('customerList');
+
+  if (customers.length === 0) {
+    listEl.innerHTML = '<div class="loading">No customers in this category</div>';
+    return;
+  }
+
+  let html = '';
+
+  for (const c of customers) {
+    const displayName = c.name || 'Unknown';
+    const nameClass = c.name ? '' : 'unnamed';
+    const dispClass = 'disposition-' + (c.disposition || 'New').replace(/\s/g, '');
+
+    html += `
+    <div class="customer-card" id="card-${c.id}">
+      <div class="customer-top">
+        <div>
+          <div class="customer-name ${nameClass}">${escHtml(displayName)}</div>
+          ${c.city ? '<div class="customer-id">' + escHtml(c.city) + '</div>' : ''}
+        </div>
+        <span class="disposition-badge ${dispClass}">${escHtml(c.disposition || 'New')}</span>
+      </div>
+
+      <button class="call-btn" id="callBtn-${c.id}" onclick="makeCall(${c.id})">
+        Call ${c.name ? escHtml(c.name) : 'Customer'}
+      </button>
+
+      <button class="edit-toggle" onclick="toggleEdit(${c.id})">
+        ${c.name ? 'Edit Name' : 'Add Name'}
+      </button>
+
+      <div class="edit-row" id="editRow-${c.id}">
+        <input class="edit-input" id="editInput-${c.id}" placeholder="Customer name" value="${escAttr(c.name || '')}">
+        <button class="edit-save-btn" onclick="saveName(${c.id})">Save</button>
+      </div>
+
+      <div class="disposition-row" id="dispRow-${c.id}">
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'Interested')">Interested</button>
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'NotInterested')">Not Interested</button>
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'NotAnswered')">Not Answered</button>
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'Callback')">Callback</button>
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'Busy')">Busy</button>
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'Invalid')">Invalid Number</button>
+      </div>
+
+      <textarea class="notes-input" id="notes-${c.id}" placeholder="Add notes about this call..." style="display:none">${escHtml(c.notes || '')}</textarea>
+    </div>`;
+  }
+
+  if (hasMore) {
+    html += '<button class="load-more-btn" onclick="loadMore()">Load More Customers</button>';
+  }
+
+  listEl.innerHTML = html;
+}
+
+// ============ ACTIONS ============
+async function makeCall(customerId) {
+  const btn = document.getElementById('callBtn-' + customerId);
+  btn.textContent = 'Calling...';
+  btn.classList.add('calling');
+  btn.disabled = true;
 
   try {
-    // Step 1: Get customer phone number from Supabase
-    const custResponse = await fetch(
-      `${supabaseUrl}/rest/v1/customers?id=eq.${customer_id}&select=phone`,
-      {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-        },
-      }
-    );
-    const customers = await custResponse.json();
-    console.log('Supabase customer lookup:', JSON.stringify(customers));
+    const response = await fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_id: customerId,
+        agent_id: currentAgent.id
+      })
+    });
 
-    if (!customers || customers.length === 0 || !customers[0].phone) {
-      return res.status(404).json({ success: false, error: 'Customer not found or no phone' });
+    const result = await response.json();
+
+    if (result.success || response.ok) {
+      showToast('Call connected!', 'success');
+      btn.textContent = 'Call in progress...';
+      // Show disposition buttons and notes
+      document.getElementById('dispRow-' + customerId).classList.add('show');
+      document.getElementById('notes-' + customerId).style.display = 'block';
+    } else {
+      showToast('Call failed. Try again.', 'error');
+      btn.textContent = 'Retry Call';
+      btn.classList.remove('calling');
+      btn.disabled = false;
     }
-
-    // Step 2: Get agent phone number from Supabase
-    const agentResponse = await fetch(
-      `${supabaseUrl}/rest/v1/agents?id=eq.${agent_id}&select=phone`,
-      {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-        },
-      }
-    );
-    const agents = await agentResponse.json();
-    console.log('Supabase agent lookup:', JSON.stringify(agents));
-
-    if (!agents || agents.length === 0 || !agents[0].phone) {
-      return res.status(404).json({ success: false, error: 'Agent not found or no phone' });
-    }
-
-    const customerPhone = customers[0].phone.toString().replace(/^91/, '');
-    const agentPhone = agents[0].phone.toString().replace(/^91/, '');
-
-    // Step 3: Call Smartflo click-to-call
-    const smartfloPayload = {
-      agent_number: agentPhone,
-      destination_number: customerPhone,
-      caller_id: agentPhone,
-      async: 1,
-    };
-
-    console.log('Smartflo request payload:', JSON.stringify(smartfloPayload));
-
-    const smartfloResponse = await fetch(
-      'https://api-smartflo.tatateleservices.com/v1/click_to_call',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': process.env.SMARTFLO_API_TOKEN,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(smartfloPayload),
-      }
-    );
-
-    const smartfloData = await smartfloResponse.json();
-    console.log('Smartflo response status:', smartfloResponse.status);
-    console.log('Smartflo response body:', JSON.stringify(smartfloData));
-
-    return res.status(smartfloResponse.status).json(smartfloData);
-
-  } catch (error) {
-    console.error('Call failed:', error.message);
-    return res.status(500).json({ success: false, error: error.message });
+  } catch (err) {
+    showToast('Network error. Check internet.', 'error');
+    btn.textContent = 'Retry Call';
+    btn.classList.remove('calling');
+    btn.disabled = false;
   }
 }
+
+async function setDisposition(customerId, disposition) {
+  const notes = document.getElementById('notes-' + customerId).value.trim();
+
+  const { error } = await db
+    .from('customers')
+    .update({
+      disposition: disposition,
+      notes: notes || null,
+      last_called_at: new Date().toISOString()
+    })
+    .eq('id', customerId);
+
+  if (error) {
+    showToast('Error saving. Try again.', 'error');
+    return;
+  }
+
+  // Log the call
+  await db.from('call_log').insert({
+    customer_id: customerId,
+    agent_id: currentAgent.id,
+    disposition: disposition,
+    notes: notes || null
+  });
+
+  showToast('Saved: ' + disposition, 'success');
+
+  // Refresh
+  loadCounts();
+  loadCustomers();
+}
+
+function toggleEdit(customerId) {
+  const editRow = document.getElementById('editRow-' + customerId);
+  editRow.classList.toggle('show');
+  if (editRow.classList.contains('show')) {
+    document.getElementById('editInput-' + customerId).focus();
+  }
+}
+
+async function saveName(customerId) {
+  const name = document.getElementById('editInput-' + customerId).value.trim();
+
+  if (!name) {
+    showToast('Enter a name first', 'error');
+    return;
+  }
+
+  const { error } = await db
+    .from('customers')
+    .update({ name: name })
+    .eq('id', customerId);
+
+  if (error) {
+    showToast('Error saving name', 'error');
+    return;
+  }
+
+  showToast('Name saved', 'success');
+  loadCustomers();
+}
+
+// ============ FILTERS ============
+function setFilter(filter, btnEl) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btnEl.classList.add('active');
+  loadCustomers();
+}
+
+function loadMore() {
+  page++;
+  loadCustomers(true);
+}
+
+// ============ HELPERS ============
+function showToast(msg, type) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'status-toast show ' + (type || '');
+  setTimeout(() => { toast.className = 'status-toast'; }, 3000);
+}
+
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function escAttr(str) {
+  return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+</script>
+</body>
+</html>
