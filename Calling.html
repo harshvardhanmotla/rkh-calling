@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Roopkala Calling</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f5f0eb;
+  color: #2d2d2d;
+  min-height: 100vh;
+}
+
+/* LOGIN SCREEN */
+.login-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: linear-gradient(135deg, #623a88 0%, #ac2789 100%);
+}
+.login-logo {
+  color: #f8e7c9;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+.login-sub {
+  color: rgba(248,231,201,0.7);
+  font-size: 14px;
+  margin-bottom: 40px;
+}
+.pin-input {
+  width: 200px;
+  padding: 16px;
+  font-size: 32px;
+  text-align: center;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.95);
+  color: #623a88;
+  letter-spacing: 12px;
+  font-weight: 700;
+}
+.pin-input::placeholder {
+  letter-spacing: 4px;
+  font-size: 16px;
+  color: #bbb;
+}
+.login-btn {
+  margin-top: 20px;
+  padding: 14px 48px;
+  background: #f8e7c9;
+  color: #623a88;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.login-error {
+  color: #ffcdd2;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+/* MAIN APP */
+.app-screen { display: none; }
+.app-header {
+  background: #623a88;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.app-title {
+  color: #f8e7c9;
+  font-size: 18px;
+  font-weight: 600;
+}
+.agent-name {
+  color: rgba(248,231,201,0.8);
+  font-size: 13px;
+}
+.logout-btn {
+  color: #f8e7c9;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* FILTERS */
+.filters {
+  padding: 12px 16px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  background: #fff;
+  border-bottom: 1px solid #e8e0d8;
+}
+.filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #d0c4b8;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  color: #666;
+}
+.filter-btn.active {
+  background: #623a88;
+  color: #fff;
+  border-color: #623a88;
+}
+.count-badge {
+  display: inline-block;
+  background: rgba(0,0,0,0.1);
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  margin-left: 4px;
+}
+.filter-btn.active .count-badge {
+  background: rgba(255,255,255,0.25);
+}
+
+/* CUSTOMER LIST */
+.customer-list {
+  padding: 12px 16px;
+}
+.customer-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.customer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.customer-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: #2d2d2d;
+}
+.customer-name.unnamed {
+  color: #999;
+  font-style: italic;
+}
+.customer-id {
+  font-size: 12px;
+  color: #aaa;
+}
+.disposition-badge {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+.disposition-New { background: #e3f2fd; color: #1565c0; }
+.disposition-Interested { background: #e8f5e9; color: #2e7d32; }
+.disposition-NotInterested { background: #fce4ec; color: #c62828; }
+.disposition-NotAnswered { background: #fff3e0; color: #ef6c00; }
+.disposition-Callback { background: #f3e5f5; color: #7b1fa2; }
+.disposition-Busy { background: #fff8e1; color: #f9a825; }
+.disposition-Invalid { background: #efebe9; color: #795548; }
+
+/* CALL BUTTON */
+.call-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #2e7d32, #43a047);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.call-btn:disabled {
+  background: #ccc;
+  color: #999;
+}
+.call-btn.calling {
+  background: linear-gradient(135deg, #ef6c00, #f57c00);
+}
+
+/* DISPOSITION ROW */
+.disposition-row {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.disposition-row.show { display: flex; }
+.disp-btn {
+  padding: 10px 14px;
+  border: 1px solid #d0c4b8;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 45%;
+  text-align: center;
+}
+.disp-btn:active {
+  background: #623a88;
+  color: #fff;
+}
+
+/* EDIT NAME */
+.edit-row {
+  display: none;
+  margin-top: 10px;
+  gap: 8px;
+}
+.edit-row.show { display: flex; }
+.edit-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #d0c4b8;
+  border-radius: 8px;
+  font-size: 15px;
+}
+.edit-save-btn {
+  padding: 10px 16px;
+  background: #623a88;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.edit-toggle {
+  background: none;
+  border: none;
+  color: #623a88;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+}
+
+/* NOTES */
+.notes-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d0c4b8;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-top: 8px;
+  resize: none;
+  height: 60px;
+}
+
+/* LOADING & STATUS */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}
+.status-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  z-index: 999;
+  display: none;
+}
+.status-toast.show { display: block; }
+.status-toast.error { background: #c62828; }
+.status-toast.success { background: #2e7d32; }
+
+/* LOAD MORE */
+.load-more-btn {
+  width: 100%;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #d0c4b8;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #623a88;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-logo">ROOPKALA</div>
+  <div class="login-sub">Telecalling System</div>
+  <input type="password" class="pin-input" id="pinInput" placeholder="PIN" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+  <button class="login-btn" onclick="handleLogin()">Login</button>
+  <div class="login-error" id="loginError"></div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app-screen" id="appScreen">
+  <div class="app-header">
+    <div>
+      <div class="app-title">Roopkala Calling</div>
+      <div class="agent-name" id="agentNameDisplay"></div>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+  </div>
+
+  <div class="filters" id="filtersBar">
+    <button class="filter-btn active" data-filter="New" onclick="setFilter('New', this)">New <span class="count-badge" id="count-New">0</span></button>
+    <button class="filter-btn" data-filter="NotAnswered" onclick="setFilter('NotAnswered', this)">Not Answered <span class="count-badge" id="count-NotAnswered">0</span></button>
+    <button class="filter-btn" data-filter="Callback" onclick="setFilter('Callback', this)">Callback <span class="count-badge" id="count-Callback">0</span></button>
+    <button class="filter-btn" data-filter="Interested" onclick="setFilter('Interested', this)">Interested <span class="count-badge" id="count-Interested">0</span></button>
+    <button class="filter-btn" data-filter="NotInterested" onclick="setFilter('NotInterested', this)">Not Interested <span class="count-badge" id="count-NotInterested">0</span></button>
+    <button class="filter-btn" data-filter="All" onclick="setFilter('All', this)">All <span class="count-badge" id="count-All">0</span></button>
+  </div>
+
+  <div class="customer-list" id="customerList">
+    <div class="loading">Loading customers...</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="status-toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ============ CONFIGURATION ============
+const SUPABASE_URL = 'https://hyxeupesicgdsucrqmjd.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eGV1cGVzaWNnZHN1Y3JxbWpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NjYxMTUsImV4cCI6MjA5NzM0MjExNX0.AxX6WCG6vc41nNMyrf1O_gK4uQ4Z07Kzvg44m0Jyy4E';
+const N8N_WEBHOOK_URL = 'https://harshmotla.app.n8n.cloud/webhook/RKH-call';
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============ STATE ============
+let currentAgent = null;
+let currentFilter = 'New';
+let customers = [];
+let page = 0;
+const PAGE_SIZE = 30;
+
+// ============ LOGIN ============
+async function handleLogin() {
+  const pin = document.getElementById('pinInput').value.trim();
+  const errorEl = document.getElementById('loginError');
+  
+  if (!pin || pin.length !== 4) {
+    errorEl.textContent = 'Enter your 4-digit PIN';
+    return;
+  }
+
+  const { data, error } = await db
+    .from('agents')
+    .select('*')
+    .eq('pin', pin)
+    .eq('is_active', true);
+
+  if (error || !data || data.length === 0) {
+    errorEl.textContent = 'Invalid PIN. Try again.';
+    return;
+  }
+
+  currentAgent = data[0];
+  document.getElementById('agentNameDisplay').textContent = currentAgent.name;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'block';
+  
+  loadCounts();
+  loadCustomers();
+}
+
+function handleLogout() {
+  currentAgent = null;
+  customers = [];
+  page = 0;
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('pinInput').value = '';
+  document.getElementById('loginError').textContent = '';
+}
+
+// Enter key on PIN input
+document.getElementById('pinInput').addEventListener('keyup', function(e) {
+  if (e.key === 'Enter') handleLogin();
+});
+
+// ============ LOAD CUSTOMERS ============
+async function loadCounts() {
+  const filters = ['New', 'NotAnswered', 'Callback', 'Interested', 'NotInterested'];
+  
+  for (const f of filters) {
+    const { count } = await db
+      .from('customers')
+      .select('*', { count: 'exact', head: true })
+      .eq('disposition', f);
+    
+    const el = document.getElementById('count-' + f);
+    if (el) el.textContent = count || 0;
+  }
+  
+  const { count: total } = await db
+    .from('customers')
+    .select('*', { count: 'exact', head: true });
+  
+  const el = document.getElementById('count-All');
+  if (el) el.textContent = total || 0;
+}
+
+async function loadCustomers(append = false) {
+  if (!append) {
+    page = 0;
+    customers = [];
+  }
+  
+  const from = page * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+  
+  let query = db
+    .from('customers')
+    .select('id, name, city, customer_type, disposition, assigned_agent, last_called_at, notes')
+    .range(from, to)
+    .order('id', { ascending: true });
+  
+  if (currentFilter !== 'All') {
+    query = query.eq('disposition', currentFilter);
+  }
+  
+  const { data, error } = await query;
+  
+  if (error) {
+    showToast('Error loading customers', 'error');
+    return;
+  }
+  
+  if (append) {
+    customers = [...customers, ...data];
+  } else {
+    customers = data || [];
+  }
+  
+  renderCustomers(data && data.length === PAGE_SIZE);
+}
+
+// ============ RENDER ============
+function renderCustomers(hasMore) {
+  const listEl = document.getElementById('customerList');
+  
+  if (customers.length === 0) {
+    listEl.innerHTML = '<div class="loading">No customers in this category</div>';
+    return;
+  }
+  
+  let html = '';
+  
+  for (const c of customers) {
+    const displayName = c.name || 'Unknown';
+    const nameClass = c.name ? '' : 'unnamed';
+    const dispClass = 'disposition-' + (c.disposition || 'New').replace(/\s/g, '');
+    
+    html += `
+    <div class="customer-card" id="card-${c.id}">
+      <div class="customer-top">
+        <div>
+          <div class="customer-name ${nameClass}">${escHtml(displayName)}</div>
+          ${c.city ? '<div class="customer-id">' + escHtml(c.city) + '</div>' : ''}
+        </div>
+        <span class="disposition-badge ${dispClass}">${escHtml(c.disposition || 'New')}</span>
+      </div>
+      
+      <button class="call-btn" id="callBtn-${c.id}" onclick="makeCall(${c.id})">
+        Call ${c.name ? escHtml(c.name) : 'Customer'}
+      </button>
+      
+      <button class="edit-toggle" onclick="toggleEdit(${c.id})">
+        ${c.name ? 'Edit Name' : 'Add Name'}
+      </button>
+      
+      <div class="edit-row" id="editRow-${c.id}">
+        <input class="edit-input" id="editInput-${c.id}" placeholder="Customer name" value="${escAttr(c.name || '')}">
+        <button class="edit-save-btn" onclick="saveName(${c.id})">Save</button>
+      </div>
+      
+      <div class="disposition-row" id="dispRow-${c.id}">
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'Interested')">Interested</button>
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'NotInterested')">Not Interested</button>
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'NotAnswered')">Not Answered</button>
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'Callback')">Callback</button>
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'Busy')">Busy</button>
+        <button class="disp-btn" onclick="setDisposition(${c.id}, 'Invalid')">Invalid Number</button>
+      </div>
+      
+      <textarea class="notes-input" id="notes-${c.id}" placeholder="Add notes about this call..." style="display:none">${escHtml(c.notes || '')}</textarea>
+    </div>`;
+  }
+  
+  if (hasMore) {
+    html += '<button class="load-more-btn" onclick="loadMore()">Load More Customers</button>';
+  }
+  
+  listEl.innerHTML = html;
+}
+
+// ============ ACTIONS ============
+async function makeCall(customerId) {
+  const btn = document.getElementById('callBtn-' + customerId);
+  btn.textContent = 'Calling...';
+  btn.classList.add('calling');
+  btn.disabled = true;
+  
+  try {
+    const response = await fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_id: customerId,
+        agent_id: currentAgent.id
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success || response.ok) {
+      showToast('Call connected!', 'success');
+      btn.textContent = 'Call in progress...';
+      // Show disposition buttons and notes
+      document.getElementById('dispRow-' + customerId).classList.add('show');
+      document.getElementById('notes-' + customerId).style.display = 'block';
+    } else {
+      showToast('Call failed. Try again.', 'error');
+      btn.textContent = 'Retry Call';
+      btn.classList.remove('calling');
+      btn.disabled = false;
+    }
+  } catch (err) {
+    showToast('Connection error. Check internet.', 'error');
+    btn.textContent = 'Retry Call';
+    btn.classList.remove('calling');
+    btn.disabled = false;
+  }
+}
+
+async function setDisposition(customerId, disposition) {
+  const notes = document.getElementById('notes-' + customerId).value.trim();
+  
+  const { error } = await db
+    .from('customers')
+    .update({ 
+      disposition: disposition, 
+      notes: notes || null,
+      last_called_at: new Date().toISOString()
+    })
+    .eq('id', customerId);
+  
+  if (error) {
+    showToast('Error saving. Try again.', 'error');
+    return;
+  }
+  
+  // Log the call
+  await db.from('call_log').insert({
+    customer_id: customerId,
+    agent_id: currentAgent.id,
+    disposition: disposition,
+    notes: notes || null
+  });
+  
+  showToast('Saved: ' + disposition, 'success');
+  
+  // Refresh
+  loadCounts();
+  loadCustomers();
+}
+
+function toggleEdit(customerId) {
+  const editRow = document.getElementById('editRow-' + customerId);
+  editRow.classList.toggle('show');
+  if (editRow.classList.contains('show')) {
+    document.getElementById('editInput-' + customerId).focus();
+  }
+}
+
+async function saveName(customerId) {
+  const name = document.getElementById('editInput-' + customerId).value.trim();
+  
+  if (!name) {
+    showToast('Enter a name first', 'error');
+    return;
+  }
+  
+  const { error } = await db
+    .from('customers')
+    .update({ name: name })
+    .eq('id', customerId);
+  
+  if (error) {
+    showToast('Error saving name', 'error');
+    return;
+  }
+  
+  showToast('Name saved', 'success');
+  loadCustomers();
+}
+
+// ============ FILTERS ============
+function setFilter(filter, btnEl) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btnEl.classList.add('active');
+  loadCustomers();
+}
+
+function loadMore() {
+  page++;
+  loadCustomers(true);
+}
+
+// ============ HELPERS ============
+function showToast(msg, type) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'status-toast show ' + (type || '');
+  setTimeout(() => { toast.className = 'status-toast'; }, 3000);
+}
+
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function escAttr(str) {
+  return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+</script>
+</body>
+</html>
