@@ -65,8 +65,8 @@ export default async function handler(req, res) {
       return res.status(404).json({ success: false, error: 'Agent not found or no phone' });
     }
 
-    const customerPhone = customers[0].phone.toString().replace(/^91/, '');
-    const agentPhone = agents[0].phone.toString().replace(/^91/, '');
+    const customerPhone = customers[0].phone.toString().replace(/^(\+?91)?/, '91');
+const agentPhone = agents[0].phone.toString().replace(/^(\+?91)?/, '91');
 
     // Step 3: Call Smartflo click-to-call
     const smartfloPayload = {
