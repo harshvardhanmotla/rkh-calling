@@ -535,6 +535,14 @@ async function makeCall(customerId) {
       // Show disposition buttons and notes
       document.getElementById('dispRow-' + customerId).classList.add('show');
       document.getElementById('notes-' + customerId).style.display = 'block';
+      // Auto-reset after 2 minutes if agent forgets to mark disposition
+      setTimeout(() => {
+        if (btn.classList.contains('calling')) {
+          btn.textContent = 'Call Again';
+          btn.classList.remove('calling');
+          btn.disabled = false;
+        }
+      }, 120000);
     } else {
       showToast('Call failed. Try again.', 'error');
       btn.textContent = 'Retry Call';
