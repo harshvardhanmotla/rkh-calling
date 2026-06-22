@@ -14,11 +14,12 @@ export default async function handler(req, res) {
   }
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-  if (!supabaseUrl || !supabaseKey || !process.env.SMARTFLO_API_TOKEN) {
+  const c2cKey = process.env.SMARTFLO_C2C_KEY;
+  if (!supabaseUrl || !supabaseKey || !c2cKey) {
     console.error('Missing env vars:', {
       hasSupabaseUrl: !!supabaseUrl,
       hasSupabaseKey: !!supabaseKey,
-      hasSmartfloToken: !!process.env.SMARTFLO_API_TOKEN,
+      hasC2CKey: !!c2cKey,
     });
     return res.status(500).json({ success: false, error: 'Server misconfigured' });
   }
@@ -38,37 +39,20 @@ export default async function handler(req, res) {
     if (!customers || customers.length === 0 || !customers[0].phone) {
       return res.status(404).json({ success: false, error: 'Customer not found or no phone' });
     }
-    // Step 2: Get agent phone number from Supabase
-    const agentResponse = await fetch(
-      `${supabaseUrl}/rest/v1/agents?id=eq.${agent_id}&select=phone`,
-      {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-        },
-      }
-    );
-    const agents = await agentResponse.json();
-    console.log('Supabase agent lookup:', JSON.stringify(agents));
-    if (!agents || agents.length === 0 || !agents[0].phone) {
-      return res.status(404).json({ success: false, error: 'Agent not found or no phone' });
-    }
     const customerPhone = customers[0].phone.toString().replace(/^(\+?91)?/, '91');
-    const agentPhone = agents[0].phone.toString().replace(/^(\+?91)?/, '91');
-    // Step 3: Call Smartflo click-to-call
+    // Step 2: Call Smartflo Click to Call Support API
     const smartfloPayload = {
-      agent_number: '1005',
-      destination_number: customerPhone,
-      caller_id: agentPhone,
+      customer_number: customerPhone,
+      api_key: c2cKey,
+      caller_id: '918065068760',
       async: 1,
     };
-    console.log('Smartflo request payload:', JSON.stringify(smartfloPayload));
+    console.log('Smartflo C2C Support payload:', JSON.stringify(smartfloPayload));
     const smartfloResponse = await fetch(
-      'https://api-smartflo.tatateleservices.com/v1/click_to_call',
+      'https://api-smartflo.tatateleservices.com/v1/click_to_call_support',
       {
         method: 'POST',
         headers: {
-          'Authorization': process.env.SMARTFLO_API_TOKEN,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
