@@ -522,11 +522,28 @@ async function makeCall(customerId) {
   btn.classList.add('calling');
   btn.disabled = true;
 
-  // Lock this customer to current agent immediately so others cannot call them
+  // Try to lock this customer - only succeeds if unassigned or already ours
   await db
     .from('customers')
     .update({ assigned_agent: currentAgent.id })
-    .eq('id', customerId);
+    .eq('id', customerId)
+    .or('assigned_agent.is.null,assigned_agent.eq.' + currentAgent.id);
+
+  // Verify we got the lock
+  const { data: check } = await db
+    .from('customers')
+    .select('assigned_agent')
+    .eq('id', customerId)
+    .single();
+
+  if (check && check.assigned_agent !== currentAgent.id) {
+    showToast('Another agent is already calling this customer', 'error');
+    btn.textContent = 'Taken';
+    btn.classList.remove('calling');
+    btn.disabled = true;
+    btn.style.background = '#999';
+    return;
+  }
 
   try {
     const response = await fetch(N8N_WEBHOOK_URL, {
