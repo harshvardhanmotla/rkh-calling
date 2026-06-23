@@ -402,7 +402,8 @@ async function loadCounts() {
     const { count } = await db
       .from('customers')
       .select('*', { count: 'exact', head: true })
-      .eq('disposition', f);
+      .eq('disposition', f)
+      .or('assigned_agent.is.null,assigned_agent.eq.' + currentAgent.id);
 
     const el = document.getElementById('count-' + f);
     if (el) el.textContent = count || 0;
@@ -410,7 +411,8 @@ async function loadCounts() {
 
   const { count: total } = await db
     .from('customers')
-    .select('*', { count: 'exact', head: true });
+    .select('*', { count: 'exact', head: true })
+    .or('assigned_agent.is.null,assigned_agent.eq.' + currentAgent.id);
 
   const el = document.getElementById('count-All');
   if (el) el.textContent = total || 0;
@@ -434,6 +436,9 @@ async function loadCustomers(append = false) {
   if (currentFilter !== 'All') {
     query = query.eq('disposition', currentFilter);
   }
+
+  // Only show customers not locked by another agent
+  query = query.or('assigned_agent.is.null,assigned_agent.eq.' + currentAgent.id);
 
   const { data, error } = await query;
 
@@ -517,6 +522,12 @@ async function makeCall(customerId) {
   btn.classList.add('calling');
   btn.disabled = true;
 
+  // Lock this customer to current agent immediately so others cannot call them
+  await db
+    .from('customers')
+    .update({ assigned_agent: currentAgent.id })
+    .eq('id', customerId);
+
   try {
     const response = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
@@ -560,12 +571,16 @@ async function makeCall(customerId) {
 async function setDisposition(customerId, disposition) {
   const notes = document.getElementById('notes-' + customerId).value.trim();
 
+  // Release lock for Not Answered and Busy so other agents can retry
+  const shouldRelease = (disposition === 'NotAnswered' || disposition === 'Busy');
+
   const { error } = await db
     .from('customers')
     .update({
       disposition: disposition,
       notes: notes || null,
-      last_called_at: new Date().toISOString()
+      last_called_at: new Date().toISOString(),
+      assigned_agent: shouldRelease ? null : currentAgent.id
     })
     .eq('id', customerId);
 
