@@ -255,6 +255,26 @@ body {
   margin-top: 8px;
 }
 
+/* REFERRAL */
+.referral-row {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e0d6cc;
+}
+.referral-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #623a88;
+  margin-bottom: 8px;
+}
+.referral-row .edit-input {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.referral-row .edit-save-btn {
+  width: 100%;
+}
+
 /* TOAST */
 .status-toast {
   position: fixed;
@@ -360,7 +380,7 @@ async function handleLogin() {
   }
 
   const { data, error } = await db
-    .from('agents')
+    .from('agents_safe')
     .select('*')
     .eq('pin', pin)
     .eq('is_active', true);
@@ -400,7 +420,7 @@ async function loadCounts() {
 
   for (const f of filters) {
     const { count } = await db
-      .from('customers')
+      .from('customers_safe')
       .select('*', { count: 'exact', head: true })
       .eq('disposition', f)
       .or('assigned_agent.is.null,assigned_agent.eq.' + currentAgent.id);
@@ -410,7 +430,7 @@ async function loadCounts() {
   }
 
   const { count: total } = await db
-    .from('customers')
+    .from('customers_safe')
     .select('*', { count: 'exact', head: true })
     .or('assigned_agent.is.null,assigned_agent.eq.' + currentAgent.id);
 
@@ -428,7 +448,7 @@ async function loadCustomers(append = false) {
   const to = from + PAGE_SIZE - 1;
 
   let query = db
-    .from('customers')
+    .from('customers_safe')
     .select('id, name, city, customer_type, disposition, assigned_agent, last_called_at, notes')
     .range(from, to)
     .order('id', { ascending: true });
@@ -505,6 +525,13 @@ function renderCustomers(hasMore) {
       </div>
 
       <textarea class="notes-input" id="notes-${c.id}" placeholder="Add notes about this call..." style="display:none">${escHtml(c.notes || '')}</textarea>
+
+      <div class="referral-row" id="refRow-${c.id}" style="display:none">
+        <div class="referral-label">Add Referral Contact</div>
+        <input class="edit-input" id="refName-${c.id}" placeholder="Referral name">
+        <input class="edit-input" id="refPhone-${c.id}" placeholder="Referral phone (10 digits)" inputmode="numeric" maxlength="10">
+        <button class="edit-save-btn" onclick="saveReferral(${c.id})">Save Referral</button>
+      </div>
     </div>`;
   }
 
@@ -531,7 +558,7 @@ async function makeCall(customerId) {
 
   // Verify we got the lock
   const { data: check } = await db
-    .from('customers')
+    .from('customers_safe')
     .select('assigned_agent')
     .eq('id', customerId)
     .single();
@@ -563,6 +590,7 @@ async function makeCall(customerId) {
       // Show disposition buttons and notes
       document.getElementById('dispRow-' + customerId).classList.add('show');
       document.getElementById('notes-' + customerId).style.display = 'block';
+      document.getElementById('refRow-' + customerId).style.display = 'block';
       // Auto-reset after 2 minutes if agent forgets to mark disposition
       setTimeout(() => {
         if (btn.classList.contains('calling')) {
@@ -649,6 +677,39 @@ async function saveName(customerId) {
 
   showToast('Name saved', 'success');
   loadCustomers();
+}
+
+async function saveReferral(customerId) {
+  const refName = document.getElementById('refName-' + customerId).value.trim();
+  const refPhone = document.getElementById('refPhone-' + customerId).value.trim();
+
+  if (!refPhone || refPhone.length < 10) {
+    showToast('Enter a valid 10-digit phone number', 'error');
+    return;
+  }
+
+  // Add referral as a new customer
+  const { error } = await db
+    .from('customers')
+    .insert({
+      name: refName || null,
+      phone: refPhone.replace(/^(\+?91)?/, ''),
+      disposition: 'New',
+      notes: 'Referral from customer #' + customerId
+    });
+
+  if (error) {
+    if (error.code === '23505') {
+      showToast('This number already exists in the system', 'error');
+    } else {
+      showToast('Error saving referral', 'error');
+    }
+    return;
+  }
+
+  showToast('Referral added as new contact', 'success');
+  document.getElementById('refName-' + customerId).value = '';
+  document.getElementById('refPhone-' + customerId).value = '';
 }
 
 // ============ FILTERS ============
